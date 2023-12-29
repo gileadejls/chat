@@ -19,16 +19,16 @@
     <script>
         const socket = io()
         const mywords = []
-        const text = ''
+        let txt = ''
 
-        function sendAudio(){
-            let sendaudiotext = new Audio('./audios/sendmessage.mp3')
+        async function sendAudio(){
+            let sendaudiotext = await new Audio('./audios/sentcut.mp3')
 
             sendaudiotext.play()
         }
 
-        function recivedAudio(){
-            let recivedaudiotext = new Audio('./audios/recivedmessage.mp3')
+        async function recivedAudio(){
+            let recivedaudiotext = await new Audio('./audios/recivedcut.mp3')
 
             recivedaudiotext.play()
         }
@@ -36,7 +36,7 @@
         document.querySelector('#messageForm').addEventListener('submit', function(event) {
             event.preventDefault()
 
-            let txt = document.querySelector("#m").value
+            txt = document.querySelector("#m").value
 
             if(txt.toLowerCase().indexOf('gileade') !== -1){
                 txt = txt.replace(/gileade/g, 'Amor da minha Vida <3')
@@ -44,11 +44,9 @@
                 socket.emit('chat message', txt)
                 mywords.push(txt)
 
-                sendAudio()
             }else{
                 socket.emit('chat message', document.querySelector('#m').value)
                 mywords.push(document.querySelector('#m').value)
-                sendAudio()
             }
 
 
@@ -73,7 +71,6 @@
                 li.remove()
             })
 
-            recivedAudio()
             for (const msg of history){
                 const messageList = document.querySelector('#messages')
                 const div = document.createElement('div')
@@ -87,21 +84,31 @@
                     text.className = 'sent'
                 }else{
                     text.className = 'recived'
+
                 }
 
                 messageList.scrollTop = messageList.scrollHeight
                 const divs = document.querySelectorAll('#messages div')
+
                 divs.forEach((el)=>{
                     if(mywords.length > 0 || divs.length > 0){
                         if(el === divs[divs.length - 1]){
-                        el.className = 'open'
-
+                            el.className = 'open'
+                            console.log("aqui")
                         }else{
                             el.className = ''
                         }
                     }
                 })
+
             }
+
+            if(history.indexOf(txt) !== -1){
+                    recivedAudio()
+            }else{
+                sendAudio()
+            }
+
 
 
         })
