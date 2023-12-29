@@ -11,6 +11,7 @@
 
 .container ul{
     min-height: 94vh;
+    max-height: 94vh;
     display: flex;
     flex-direction: column;
     overflow-y: auto
@@ -21,12 +22,13 @@ form{
     min-height: 6vh;
     display: flex;
     bottom: 0;
-    float: bottom;
+    position: fixed;
+    bottom: 0;
     border-top: 1px solid rgb(209, 207, 207);
 }
 input{
     height: 100%;
-    width: 100%;
+    width: 80vw;
     font-size: 22px;
     padding-left: 10px;
     outline: none;
@@ -34,7 +36,7 @@ input{
 }
 
 button{
-    min-width: 80px;
+    width: 20vw;;
     border: none;
     background-color: blueviolet;
     color: white;
