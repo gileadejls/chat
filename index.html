@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./output.css">
+    <title>Document</title>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-red-500">Funcionando!</h1>
+        <form id="messageForm">
+            <input type="text" id="m" autocomplete="off">
+            <button type="submit">Enviar</button>
+        </form>
+    
+        <ul id="messages"></ul>
+    </div>
+
+    <script src="https://cdn.socket.io/4.1.2/socket.io.min.js"></script>
+    <script>
+        const socket = io()
+        const mywords = []
+
+        document.querySelector('#messageForm').addEventListener('submit', function(event) {
+            event.preventDefault()
+
+            socket.emit('chat message', document.querySelector('#m').value)
+            mywords.push(document.querySelector('#m').value)
+
+            console.log(mywords)
+
+            document.querySelector('#m').value = ''
+        })
+
+        //adicionar um ouvinte para receber mensagens do servidor
+        socket.on('chat history', function(history){
+            // const messageList = document.querySelector('#messages')
+            // const listItem = document.createElement('li')
+            // listItem.textContent = msg
+            // messageList.appendChild(listItem)
+
+            //limpando a tela para não replicar mensagens repitidas
+            const allmsglist = document.querySelectorAll('#messages li')
+
+            allmsglist.forEach((li)=>{
+                li.remove()
+            })
+
+            for (const msg of history){
+                const messageList = document.querySelector('#messages')
+                const listItem = document.createElement('li')
+                listItem.className = 'eu'
+                listItem.textContent = msg
+
+                if(mywords.indexOf(msg) !== -1){
+                    listItem.style = 'color: green;'
+                }else{
+                    listItem.style = 'color: red;'
+                }
+                messageList.appendChild(listItem)
+
+            }
+        })
+
+    </script>
+</body>
+</html>
