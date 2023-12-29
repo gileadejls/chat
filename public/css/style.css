@@ -10,7 +10,7 @@
 }
 
 .container ul{
-    max-height: 94vh;
+    height: 94vh;
     display: flex;
     flex-direction: column;
     overflow-y: auto
@@ -21,6 +21,7 @@ form{
     height: 6vh;
     display: flex;
     bottom: 0;
+    float: bottom;
     border-top: 1px solid rgb(209, 207, 207);
 }
 input{
