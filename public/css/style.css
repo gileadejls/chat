@@ -6,11 +6,11 @@
 
 .container{
     width: 100%;
-    height: 100%;
+    height: 100vh;
 }
 
 .container ul{
-    height: 94vh;
+    min-height: 94vh;
     display: flex;
     flex-direction: column;
     overflow-y: auto
@@ -18,7 +18,7 @@
 }
 
 form{
-    height: 6vh;
+    min-height: 6vh;
     display: flex;
     bottom: 0;
     float: bottom;
