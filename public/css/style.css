@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
 *{
     margin: 0;
     padding: 0;
@@ -14,8 +16,14 @@
     max-height: 94vh;
     display: flex;
     flex-direction: column;
-    overflow-y: auto
+    justify-content: flex-end;
+    overflow-y: auto;
+    font-family: 'Roboto', sans-serif;
 
+}
+
+.container ul div{
+    float: bottom;
 }
 
 form{
@@ -31,8 +39,10 @@ input{
     width: 80vw;
     font-size: 22px;
     padding-left: 10px;
+    padding-top: 7px;
     outline: none;
     border: none;
+    display: flex;
 }
 
 button{

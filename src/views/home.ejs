@@ -8,7 +8,8 @@
 </head>
 <body>
     <div class="container">
-        <ul id="messages"></ul>
+        <ul id="messages">
+        </ul>
         <form action="" id="messageForm">
             <input type="text"  id="m" autocomplete="off" placeholder="digite aqui">
             <button type="submit" id="">Enviar</button>
@@ -21,6 +22,7 @@
         const mywords = []
         let txt = ''
 
+        //FUNÇÕES PARA OS EFEITOS DE SONS AO ENVIAR MENSAGENS
         async function sendAudio(){
             let sendaudiotext = await new Audio('./audios/sentcut.mp3')
 
@@ -39,7 +41,7 @@
             txt = document.querySelector("#m").value
 
             if(txt.toLowerCase().indexOf('gileade') !== -1){
-                txt = txt.replace(/gileade/g, 'Amor da minha Vida <3')
+                txt = txt.replace(/gileade/gi, 'Amor da minha Vida <3')
                 console.log(txt)
                 socket.emit('chat message', txt)
                 mywords.push(txt)
