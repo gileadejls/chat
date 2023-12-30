@@ -43,12 +43,9 @@ io.on('connection', (socket) =>{
         console.log(event)
     })
 
-
 })
 
 
-
-
 server.listen(80, ()=>{
-    console.log('Servidor Rodando em http://localhost:3000')
+    console.log('Servidor Rodando em http://localhost:80')
 })

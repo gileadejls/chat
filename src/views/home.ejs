@@ -35,18 +35,15 @@
             recivedaudiotext.play()
         }
 
+
+        //PEGA O VALOR QUE ESTÁ NO INPUT E IMPEDE O ENVIO DO FORMULARIO PARA TRATAMENTO ANTES
         document.querySelector('#messageForm').addEventListener('submit', function(event) {
             event.preventDefault()
-
             txt = document.querySelector("#m").value
+ 
 
-            if(txt.toLowerCase().indexOf('gileade') !== -1){
-                txt = txt.replace(/gileade/gi, 'Amor da minha Vida <3')
-                console.log(txt)
-                socket.emit('chat message', txt)
-                mywords.push(txt)
-
-            }else{
+            //VERIFICA SE TEM SOMENTE ESPAÇOS VAZIOS, CASO TENHA, ELE NÃO ENVIA
+            if(txt.match(/[^\s]/gi) !== null){
                 socket.emit('chat message', document.querySelector('#m').value)
                 mywords.push(document.querySelector('#m').value)
             }
@@ -54,6 +51,7 @@
 
             console.log(mywords)
 
+            // DEIXA O INPUT VAZIO DEPOIS DE ENVIAR
             document.querySelector('#m').value = ''
         })
 
@@ -61,10 +59,6 @@
 
         //adicionar um ouvinte para receber mensagens do servidor
         socket.on('chat history', function(history){
-            // const messageList = document.querySelector('#messages')
-            // const listItem = document.createElement('li')
-            // listItem.textContent = msg
-            // messageList.appendChild(listItem)
 
             //limpando a tela para não replicar mensagens repitidas
             const allmsglist = document.querySelectorAll('#messages div')
@@ -73,6 +67,7 @@
                 li.remove()
             })
 
+            //RECEBE DO SERVIDOR UM ARRAY DAS MENSAGENS E FAZ O TRATAMENTO DE CADA UMA
             for (const msg of history){
                 const messageList = document.querySelector('#messages')
                 const div = document.createElement('div')
@@ -82,6 +77,7 @@
                 messageList.appendChild(div)
 
 
+                //VERIFICA SE A MSG QUE FOI LIDA DO ARRAY ESTÁ NAS MENSAGENS QUE O USUARIO
                 if(mywords.indexOf(msg) !== -1){
                     text.className = 'sent'
                 }else{
@@ -89,9 +85,12 @@
 
                 }
 
+
+                //DEIXA O SCROLL SEMPRE PRA BAIXO
                 messageList.scrollTop = messageList.scrollHeight
                 const divs = document.querySelectorAll('#messages div')
 
+                //COLOCA A ANIMAÇÃO DA CAIXA DE TEXTO NAS ULTIMAS MENSAGENS
                 divs.forEach((el)=>{
                     if(mywords.length > 0 || divs.length > 0){
                         if(el === divs[divs.length - 1]){
@@ -105,6 +104,8 @@
 
             }
 
+            //SE DENTRO DO ARRAY RECEBIDO DO SERVIDOR, A MENSAGEM DO USUARIO
+            //NÃO ESTIVER, ELE EMITE UM SOM DE AUDIO DIFERENTE
             if(history.indexOf(txt) !== -1){
                     recivedAudio()
             }else{
