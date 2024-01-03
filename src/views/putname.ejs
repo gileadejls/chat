@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/name.css">
+    <title>Document</title>
+</head>
+<body>
+    <div>
+        <form action="message" method="get" class="formName" >
+            <input type="text" name="user" id="nameuser" placeholder="digite seu nome">
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+    <script src="https://cdn.socket.io/4.1.2/socket.io.min.js"></script>
+    <script>
+        const socket = io()
+        
+        document.querySelector('.formName').addEventListener('submit', (event)=>{
+            // event.preventDefault()
+
+            socket.emit('name user', document.querySelector('#nameuser').value)
+        })
+    </script>
+</body>
+</html>

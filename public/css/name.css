@@ -1,0 +1,39 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    background-color: rgb(247, 244, 244);
+}
+
+body div{
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+form{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 300px;
+    
+}
+
+input{
+    padding: 10px 20px;
+    font-size: 18px;
+    border: none;
+    outline: none;
+    box-shadow: 2px 2px 2px #cec9c9;
+}
+
+button{
+    margin-top: 10px;
+    background-color: plum;
+    height: 35px;
+}

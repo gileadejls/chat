@@ -7,10 +7,53 @@
     <title>Document</title>
 </head>
 <body>
+    <div class="container-info">
+        <form  action="/request" method="post" id="sendForm">
+            <input type="text" placeholder="adicionar usuario" name="user" id="finduser">
+            <button type="submit">Enviar solicitação</button>
+        </form>
+        <div class="container-friend">
+            <% if(friends.length > 0) { %>
+                <div class="friends">
+                    <% for(const friend of friends) { %>
+                        <div class="friendList">
+                            <p class="friend"><%= friend.user %></p>
+                            <div>
+                                <p id="status">Offline</p>
+                                <button>chat</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div class="friends">
+                    <p>Nenhum amigo adicionado</p>
+                </div>
+            <% } %>
+            <% if(requests) { %>
+                <div class="friend-requests">
+                    <p>pedidos de amizades</p>
+                    <% for(let usuario of requests){ %>
+                        <% console.log('Criando div de pedido de amizade -->', usuario) %>
+                        <div class="requests">
+                            <div>
+                                <p><%= usuario.user %></p>
+                            </div>
+                            <div class="requestResponse">
+                                <button class="accept">Aceitar</button>
+                                <button class="reject">Recusar</button>
+                            </div>
+                        </div>
+                        
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </div>
     <div class="container">
         <ul id="messages">
         </ul>
-        <form action="" id="messageForm">
+        <form id="messageForm">
             <input type="text"  id="m" autocomplete="off" placeholder="digite aqui">
             <button type="submit" id="">Enviar</button>
         </form>
@@ -18,9 +61,76 @@
 
     <script src="https://cdn.socket.io/4.1.2/socket.io.min.js"></script>
     <script>
-        const socket = io()
-        const mywords = []
-        let txt = ''
+        const form = document.querySelector("#sendForm") 
+        // const dados = new FormData(this)
+        // const plainFormData = Object.fromEntries(dados.entries())
+        // const formDataJsonString = JSON.stringify(plainFormData);
+
+
+  
+
+        form.addEventListener('submit', async (event)=>{
+            event.preventDefault()
+
+            let data = {name: document.querySelector('#finduser').value, whorequest: {user: '<%= nameuser %>', id: '<%= iduser %>'}}
+
+            const init = await fetch('/request', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+
+        })
+
+
+        //FUNÇÃO PARA ACEITAR OU RECUSAR SOLICITAÇÕES
+        async function sendResponseOfRequest(){
+            const reqs = document.querySelectorAll('.requestResponse button')
+            let data = {}
+
+            //UM EVENTO NOS BOTÕES PARA VERIFICAR A RESPOSTA
+            reqs.forEach((req)=>{
+                req.addEventListener("click", async (event)=>{
+                    let name = req.parentNode.parentNode.childNodes[1].children[0].textContent
+
+                    //ENVIA O OBJETO CONTENDO QUEM ENVIOU, QUEM RESPONDEU, O QUE RESPONDEU
+                    if(req.className === 'accept'){
+                        data = {user: name, response: 'accept', whoresponse: '<%= nameuser %>'}
+                    }else{
+                        data = {user: name, response: 'reject', whoresponse: '<%= nameuser %>'}
+                    }
+
+                    //REMOVE A DIV LOGO DEPOIS
+                    req.parentNode.parentNode.remove()
+
+
+                    //ENVIA PARA O SERVIDOR
+                    const response = await fetch('/responseRequest', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })
+
+                    
+                })
+            })
+
+        }   
+
+        sendResponseOfRequest()
+
+    //SOCKETS
+
+    const socket = io()
+    const mywords = []
+    const nameuser = '<%= nameuser %>'
+    let txt = ''
+
+    
 
         //FUNÇÕES PARA OS EFEITOS DE SONS AO ENVIAR MENSAGENS
         async function sendAudio(){
@@ -40,83 +150,81 @@
         document.querySelector('#messageForm').addEventListener('submit', function(event) {
             event.preventDefault()
             txt = document.querySelector("#m").value
- 
+
 
             //VERIFICA SE TEM SOMENTE ESPAÇOS VAZIOS, CASO TENHA, ELE NÃO ENVIA
             if(txt.match(/[^\s]/gi) !== null){
-                socket.emit('chat message', document.querySelector('#m').value)
+                socket.emit('chat message', {msg: document.querySelector('#m').value, id: nameuser})
                 mywords.push(document.querySelector('#m').value)
             }
-
-
-            console.log(mywords)
 
             // DEIXA O INPUT VAZIO DEPOIS DE ENVIAR
             document.querySelector('#m').value = ''
         })
 
 
+        //ATUALIZANDO PESSOAS ONLINES 
+        socket.on('online users', (onlineusers)=>{
+            console.log(onlineusers)
+            for(const people of onlineusers){
+                try{
+                    let nameFriend = document.querySelectorAll('.friendList')
+                    nameFriend.forEach((element, pos)=>{
+
+                        //RECEBE O ARRAY COM OS USERS ONLINE E VERIFICA PRIMEIRO SE JA TEM ALGUEM
+                        //COM O STATUS ONLINE, SE SIM, ELE VERIFICA SE ESSA PESSOA AINDA ESTA NO
+                        //ARRAY DOS USUARIOS ONLINE, SE NÃO TIVER, ELE MUDA OS STATUS
+                        //SE NÃO TIVER, ELE VERIFICA SE A PESSOA ESTÁ NO ARRAY DOS USERS ONLINE
+                        // SE ESTIVER, ELE ADICIONA O STATUS DE ONLINE
+                        if(element.childNodes[1].textContent === people.userOnline.user){
+                            console.log(people.userOnline.user, 'ta online')
+                            console.log(element.childNodes[3].childNodes[1])
+                            element.childNodes[3].childNodes[1].textContent = 'Online'
+                        }
+                    })
+
+                }catch(e){console.log('sem amigoskkkk')}
+            }
+        })
+
+        //ATUALIZANDO QUANDO ALGUEM SE DESCONECTA
+        socket.on('user disconnect', (userdisconnect)=>{
+            for(const people of userdisconnect){
+                try{
+                    let nameFriend = document.querySelectorAll('.friendList')
+
+                    nameFriend.forEach((element, pos)=>{
+                        if(element.childNodes[1].textContent !== people.userOnline.user){
+                            element.childNodes[3].childNodes[1].textContent = 'Offline'
+                        }
+                    })
+                }catch(e){console.log(e)}
+            }
+        })
+
 
         //adicionar um ouvinte para receber mensagens do servidor
-        socket.on('chat history', function(history){
 
-            //limpando a tela para não replicar mensagens repitidas
-            const allmsglist = document.querySelectorAll('#messages div')
-
-            allmsglist.forEach((li)=>{
-                li.remove()
-            })
-
-            //RECEBE DO SERVIDOR UM ARRAY DAS MENSAGENS E FAZ O TRATAMENTO DE CADA UMA
-            for (const msg of history){
+        socket.on('chat history', (msg)=>{
+            for(const message of msg){
                 const messageList = document.querySelector('#messages')
                 const div = document.createElement('div')
                 const text = document.createElement('p')
-                text.textContent = msg
+                text.textContent = message.msg
                 div.appendChild(text)
                 messageList.appendChild(div)
-
-
-                //VERIFICA SE A MSG QUE FOI LIDA DO ARRAY ESTÁ NAS MENSAGENS QUE O USUARIO
-                if(mywords.indexOf(msg) !== -1){
-                    text.className = 'sent'
+                if(message.id !== nameuser){
+                    text.classList.add('recived')
                 }else{
-                    text.className = 'recived'
-
+                    text.classList.add('sent')
+                }
+                if(msg[msg.length -1] === message){
+                    div.classList.add('open')
                 }
 
-
-                //DEIXA O SCROLL SEMPRE PRA BAIXO
-                messageList.scrollTop = messageList.scrollHeight
-                const divs = document.querySelectorAll('#messages div')
-
-                //COLOCA A ANIMAÇÃO DA CAIXA DE TEXTO NAS ULTIMAS MENSAGENS
-                divs.forEach((el)=>{
-                    if(mywords.length > 0 || divs.length > 0){
-                        if(el === divs[divs.length - 1]){
-                            el.className = 'open'
-                            console.log("aqui")
-                        }else{
-                            el.className = ''
-                        }
-                    }
-                })
-
+                document.querySelector("#messages").appendChild(div)
             }
-
-            //SE DENTRO DO ARRAY RECEBIDO DO SERVIDOR, A MENSAGEM DO USUARIO
-            //NÃO ESTIVER, ELE EMITE UM SOM DE AUDIO DIFERENTE
-            if(history.indexOf(txt) !== -1){
-                    recivedAudio()
-            }else{
-                console.log(history.indexOf(txt))
-                sendAudio()
-            }
-
-
-
         })
-
     </script>
 </body>
 </html>
