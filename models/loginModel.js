@@ -25,8 +25,9 @@ class Login{
                 this.errors.push('Usuario ou senha invalidos')
                 return false
             }
-            this.userID = (result[0]._id).toString()
-            return this.userID
+
+            //RETORNANDO O ID DO USUARIO
+            return (result[0]._id).toString()
         }catch(e){console.log(e)}
     }
 
@@ -38,66 +39,74 @@ class Login{
 
     }
 
-    async sendRequest(){
+    async sendRequest(whoadd, whosend){
         try{
             //verifica no banco de dados se o usuario existe
-            const finduser = await LoginModel.find({user: this.body.name})
-            if(finduser.length > 0){
-                //pega o id do usuario que foi solicitado
-                let userid = (finduser[0]._id).toString()
+            const finduser = await LoginModel.find({user: whoadd})
 
+
+            //caso este usuario exista
+            if(finduser.length > 0){
+
+                //pega o id do usuario que foi solicitado
+                let whoAddId = (finduser[0]._id).toString()
+
+                //verifica se não há nenhum pedido de amizade ainda
                 if(finduser[0].requests.length < 1){
-                    const sendRequest = await LoginModel.findByIdAndUpdate(userid, {$push: {requests: this.body.whorequest}}, {new: true})
+
+                    const sendRequest = await LoginModel.findByIdAndUpdate(whoAddId, {$push: {requests: whosend}}, {new: true})
                     return true
                 }else{
-                    //verifica se ja tem uma solicitação enviada
-                    for(const name of finduser[0].requests){
-                        if(name.id === this.body.whorequest.id){
-                            this.errors.push('Você ja enviou uma solicitação para este usuario')
+
+                    for(const request of finduser[0].requests){
+                        if(request.id === whosend.id){
+
+                            this.errors.push('Você ja enviou uma solicitação de amizade para este usuario')
                             return false
-                        }else{
-                            const sendRequest = await LoginModel.findByIdAndUpdate(userid, {$push: {requests: this.body.whorequest}}, {new: true})
-                            return true
                         }
                     }
+
+                    const sendRequest = await LoginModel.findByIdAndUpdate(whoAddId, {$push: {requests: whosend}}, {new: true})
+                    return true
                 }
             }
-
-             //caso o usuario não for encontrado
-             this.errors.push('Usuario não encontrado')
-             return false
-
-           
-
+            //caso o usuario não for encontrado
+            this.errors.push('Usuario não encontrado')
+            return false
         }catch(e){console.log(e)}
     }
 
-    async responseRequest(){
-        console.log(this.body)
-        const findOnRequestTheUser = await LoginModel.updateOne({user: this.body.whoresponse}, {$pull:{requests: {user: this.body.user}}})
+    async responseRequest(response){
+        try{
+            const findOnRequestTheUser = await LoginModel.updateOne({_id: response.userid}, {$pull:{requests: {user: response.whosend}}})
 
 
-        if(this.body.response === 'accept'){
+            if(response.myresponse === 'accept'){
 
 
-            const addFriendWhoRequest = await LoginModel.findOneAndUpdate({user: this.body.user}, {$push: {friends: {user: this.body.whoresponse}}})
+                const addFriendWhoRequest = await LoginModel.findOneAndUpdate({user: response.whosend}, {$push: {friends: {user: response.username, id: response.userid}}})
 
-            const addFriendWhoResponse = await LoginModel.findOneAndUpdate({user: this.body.whoresponse}, {$push: {friends: {user: this.body.user}}})
-            
-            return true
-        }
+                const addFriendWhoResponse = await LoginModel.findOneAndUpdate({user: response.username}, {$push: {friends: {user: response.whosend}}})
+                
+                return true
+            }
 
-        console.log('Solicitação de amizade recusada')
-        return false
+            console.log('Solicitação de amizade recusada')
+            return false
+        }catch(e){console.log(e)}
 
     }
 
     //VERIFICA SE HÁ SOLICITAÇÕES DE AMIZADE E RETORNA ELAS
-    async verifyRequests(){
+    async verifyRequests(id){
         try{
-            const verifyIfHaveRequest = await LoginModel.find({_id: this.userID})
+            const verifyIfHaveRequest = await LoginModel.find({_id: id})
             //retorna os pedidos de amizades se TRUE
-            return verifyIfHaveRequest[0].requests
+            if(verifyIfHaveRequest[0].requests.length > 0){
+                return verifyIfHaveRequest[0].requests
+            }else{
+                return false
+            }
         }catch(e){console.log(e)}
     }
 
@@ -109,6 +118,10 @@ class Login{
         }catch(e){console.log(e)}
         
         
+    }
+
+    async sendMessage(){
+
     }
 }
 

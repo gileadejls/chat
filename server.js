@@ -5,6 +5,9 @@ const socketIO = require('socket.io')
 const path = require('path')
 const Login = require('./models/loginModel')
 const mongoose = require('mongoose')
+const jwt = require('jsonwebtoken')
+const cookieParser = require('cookie-parser')
+const session = require('express-session')
 
 
 const app = express()
@@ -26,105 +29,140 @@ app.set('view engine', 'ejs')
 
 //VARIAVEIS GLOBAIS
 let messageHistory = []
-let users = []
-let us = {}
-let OnlineUser = []
+let userName = ''
 
+app.use(cookieParser())
 
+function verifyCookies(req, res, next){
+    const token = req.cookies['token']
 
-app.post('/request', async (req, res)=>{
-    //RECEBENDO OS DADOS ATRAVES DO FETCH
-    const dados = req.body
-
-    console.log('quem está enviado --->', us)
-    const find = new Login(req.body)
-    const findresult = await find.sendRequest()
-    if(findresult){
-        console.log('solicitação enviada')
-    }else{
-        console.log('chegou false', find.errors)
+    if(!token){
+        req.user = null
+        return res.status(401).render('login')
     }
 
+    try{
+        const decoded = jwt.sign(token, 'banana')
+        req.user = decoded
+        
+        next()
+    }catch(error){
+        req.user = null
+        return res.status(403).render('login')
+    }
+}
 
+async function verifyTheRequests(req, res){
+    const reqs = new Login()
+    const havaRequests = await reqs.verifyRequests(req.session.user.id)
+    if(havaRequests){
+        res.render('home', {requests: havaRequests})
+    }else{
+        console.log('nao')
+        res.render('home', {requests: null})
+    }
+}
+
+async function responseTheRequests(req, res){
+    const response = {whosend: req.body.whosend, myresponse: req.body.myresponse, userid: req.session.user.id, username: req.session.user}
+    const requestResponse = new Login()
+    const answer = await requestResponse.responseRequest(response)
+
+    if(answer){
+        console.log('Solicitação respondida')
+        verifyTheRequests(req, res)
+    }else{
+        console.log('Não foi possivel responder')
+        console.log(answer)
+        verifyTheRequests(req, res)
+    }
+}
+app.use(session({
+    secret: process.env.SECRETKEY,
+    resave: false,
+    saveUninitialized: false
+}))
+
+//HOME DA PAGINA, ONDE O VERIFYCOOKIES ESTÁ VENDO SE O USUARIO ESTA AUTENTICADO
+app.get('/', verifyCookies, async (req, res)=>{
+    
+    if(req.session.user === undefined){
+        res.redirect('/login')
+    }else{
+        return verifyTheRequests(req, res)
+    }
 })
 
-app.get('/', (req, res)=>{
+//ROTA PARA VERIFICAR SE O USUARIO FEZ LOGIN
+app.post('/', async(req, res)=>{
+    const user = new Login(req.body)
+    const tryLogin = await user.VerifyUser()
+    const SECRET_KEY = 'banana'
 
-    res.render('home', {requests: null})
+    if(tryLogin){
+        const token = jwt.sign(req.body, process.env.SECRETKEY, { expiresIn: '1h' })
+        
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            maxAge: '300000',
+            sameSite: 'strict',
+
+        })
+
+        req.session.user = {user: req.body.user, id: tryLogin}
+        res.redirect('/')
+    }else{
+        console.log(user.errors)
+        res.redirect('/login')
+    }
 })
 
-app.get('/login', (req, res)=>{
+
+//ROTA PARA O USUARIO FAZER LOGIN
+app.get('/login', (req ,res)=>{
+
     res.render('login')
 })
 
-app.post('/home', async (req, res)=>{
-    const LoginUser = new Login(req.body)
-    const resultLogin = await LoginUser.VerifyUser()
-    if(!resultLogin){
-        console.log(LoginUser.errors)
-        res.render('login')
-    }else{   
-        //PASSANDO O NOME E O ID DO USUARIO
-        users.push({user: req.body.user, id: resultLogin})
-        us = {user: req.body.user, id: resultLogin}
 
-        console.log('ID DO USUARIO QUE FEZ LOGIN', resultLogin)
-        async function verifyFriendsAndRequests(id){
-            const verifyRequests = await LoginUser.verifyRequests(id)
-            const verifyFriends = await LoginUser.gettingFriends()
-            const theuserid = ''
+//ROTA PARA ENVIAR SOLICITAÇÕES DE AMIZADE
+app.post('/request', verifyCookies, async(req, res)=>{
+    console.log('solicitação de amizade --->', req.body)
+    const whoadd = req.body.whoadd
+    const whosend = req.session.user
 
-            const requests =  verifyRequests.length > 0 ? true: false
-            const friends = verifyFriends.length > 0 ? true: false
+    console.log(whosend)
+    if(whosend !== undefined){
+        const request = new Login()
+        const sendingRequest = await request.sendRequest(whoadd, whosend)
 
-
-            res.render('home', {requests: verifyRequests, friends: verifyFriends, iduser: resultLogin, nameuser: req.body.user})
+        if(sendingRequest){
+            console.log('Solicitação enviada')
+            verifyTheRequests(req, res)
+        }else{
+            console.log(request.errors)
+            verifyTheRequests(req, res)
         }
-
-        verifyFriendsAndRequests(resultLogin)
+    }else{
+        res.status(401).send({msg: 'error with session'})
     }
-
+       
 })
 
-app.post('/responseRequest', async(req, res)=>{
-    const dados = new Login(req.body)
-    const response = await dados.responseRequest()
-    console.log('dados do usuario ---> ', us)
+//ROTA PARA RESPONDER SOLICITAÇÕES DE AMIZADE
+app.post('/response', verifyCookies, async (req, res)=>{
+    responseTheRequests(req, res)
 })
 
 //CONFIGURANDO O SOCKET.IO
 io.on('connection', (socket) =>{
-    socket.emit('chat history', messageHistory)
-    console.log('usuario se conectou')
-    OnlineUser.push({idsock: socket.id, userOnline: us})
-    
-    io.emit('online users', OnlineUser)
 
-    //logica para lidar com mensagens do cliente
     socket.on('chat message', (msg)=>{
-        console.log("verificando quem mandou a mensagem", socket.id)
-        messageHistory = [msg]
 
-        io.emit('chat history', messageHistory)
+        messageHistory.push(msg)
+        io.emit('messages', messageHistory)
     })
-
-    //logica para lidar com as desconexões do cliente
-    socket.on('disconnect', (event)=>{
-        // console.log(socket.id)
-        // console.log('um cliente se desconectou')
-        // console.log(event)
-        OnlineUser.forEach((user, pos)=>{
-            if(user.idsock === socket.id){
-                OnlineUser.splice(pos, 1)
-            }
-        })
-        console.log('desconectou')
-        console.log(OnlineUser)
-        io.emit('online users', OnlineUser)
-        io.emit('user disconnect', OnlineUser)
-
-    })
-
 })
 
 
